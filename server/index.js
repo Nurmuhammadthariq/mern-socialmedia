@@ -8,6 +8,12 @@ import helmet from "helmet"
 import morgan from "morgan"
 import path from "path"
 import { fileURLToPath } from "url"
+import authRoutes from "./routes/auth.js"
+import userRoutes from "./routes/users.js"
+import postRoutes from "./routes/posts.js"
+import { register } from "./controllers/auth.js"
+import { createPost } from "./controllers/posts.js"
+import { verifyToken } from "./middleware/auth.js"
 
 
 // Configuration
@@ -21,7 +27,7 @@ app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-app.use(cors);
+app.use(cors());
 app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
 
 // File storage
@@ -36,17 +42,28 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Routes with files
+app.post('/auth/register', upload.single("picture"), register)
+app.post('/posts', verifyToken, upload.single("picture"), createPost)
+
+// Routes
+app.use("/auth", authRoutes)
+app.use("/users", userRoutes)
+app.use("/posts", postRoutes)
+
+app.get('/', (req, res, next) => {
+    res.send("hello world");
+})
+
 
 // Mongoose SETUP
-const PORT = process.env.PORT || 6001;
+const port = 3001;
 mongoose.connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => {
-    app.listen(PORT, () => console.log(`Server connect in Port: ${PORT}`))
-}).catch((error) => console.log(`${PORT} did not connect`))
+    app.listen(port, () => console.log(`Server connect in Port: ${port}`))
+}).catch((error) => console.log(`${port} did not connect`))
 
-app.get('/', function (req, res) {
-    res.send('Hello world')
-})
+
+
 
